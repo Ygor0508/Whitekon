@@ -1,3 +1,4 @@
+'use client';
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -5,10 +6,10 @@ import { ModbusProvider } from "@/contexts/ModbusContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Whitekon - Medidor de Brancura",
-  description: "Interface de controle para o medidor de brancura Whitekon",
-};
+// export const metadata: Metadata = {
+//   title: "Whitekon - Medidor de Brancura",
+//   description: "Interface de controle para o medidor de brancura Whitekon",
+// };
 
 export default function RootLayout({
   children,
@@ -30,3 +31,25 @@ export default function RootLayout({
     </html>
   );
 }
+
+
+// 'use client';
+// import React from 'react';
+// import { ModbusProvider } from '@/contexts/ModbusContext';
+
+// export default function RootLayout({
+//   children
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <html lang="pt-BR">
+//       <head>
+//         <title>Whitekon</title>
+//       </head>
+//       <body>
+//         <ModbusProvider>{children}</ModbusProvider>
+//       </body>
+//     </html>
+//   );
+// }

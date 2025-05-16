@@ -289,200 +289,130 @@ const ModbusContext = createContext<ModbusContextType | undefined>(undefined);
 
 export function ModbusProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
-  const [portName, setPortName] = useState('');
-  const [baudRate, setBaudRate] = useState(0);
-  const [unitId, setUnitId] = useState(0);
-  const [isChecking, setIsChecking] = useState(false);
+  const [portName, setPortName]       = useState('');
+  const [baudRate, setBaudRate]       = useState(0);
+  const [unitId, setUnitId]           = useState(0);
+  const [isChecking, setIsChecking]   = useState(false);
 
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastCheckRef = useRef(0);
-  const reconnectingRef = useRef(false);
-  const readRegistersRef = useRef<(s: number, c: number) => Promise<number[]>>();
-  const disconnectRef = useRef<() => Promise<void>>();
+  const lastCheckRef   = useRef<number>(0);
+  const reconnectingRef = useRef<boolean>(false);
 
   const MIN_CHECK_INTERVAL = 3000;
 
-  //
-  // 1) Funções auxiliares para rotas HTTP
-  //
-
+  // Chama a API de conexão
   const connectModbus = useCallback(
     async (port: string, baud: number, unit: number) => {
-      try {
-        console.log('Tentando conectar com:', { port, baud, unit });
-        const resp = await fetch(
-          `/api/modbus/connect?port=${encodeURIComponent(port)}&baudrate=${baud}&unit=${unit}`,
-          { method: 'POST' }
-        );
-        const json = await resp.json();
-        // Se o JSON estiver vazio ou indicar erro, utiliza mensagem padrão
-        if (!resp.ok || !json.success || Object.keys(json).length === 0) {
-          console.error('Connect error response:', json);
-          throw new Error((json && json.error) ? json.error : 'Falha na conexão');
-        }
-        setPortName(port);
-        setBaudRate(baud);
-        setUnitId(unit);
-        setIsConnected(true);
-      } catch (err: any) {
-        console.error('Erro ao conectar:', err);
-        setIsConnected(false);
-        throw err;
-      }
-    },
-    []
-  );
-
-  const readRegisters = useCallback(
-    async (start: number, count: number): Promise<number[]> => {
-      try {
-        console.log('Lendo registros:', { start, count });
-        const resp = await fetch(
-          `/api/modbus/read?start=${start}&count=${count}`,
-          { method: 'GET' }
-        );
-        const json = await resp.json();
-        if (!resp.ok || !json.success) {
-          console.error('Read error response:', json);
-          throw new Error(json.error || 'Falha na leitura');
-        }
-        return json.data as number[];
-      } catch (err: any) {
-        console.error('Erro na leitura:', err);
-        throw err;
-      }
-    },
-    []
-  );
-
-  const writeRegister = useCallback(
-    async (address: number, value: number) => {
-      if (!isConnected) throw new Error('Dispositivo desconectado');
-      try {
-        console.log('Escrevendo registro:', { address, value });
-        const resp = await fetch('/api/modbus/write', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address, value })
-        });
-        const json = await resp.json();
-        if (!resp.ok || !json.success) {
-          console.error('Write error response:', json);
-          throw new Error(json.error || 'Falha na escrita');
-        }
-      } catch (err: any) {
-        console.error('Erro na escrita:', err);
-        if (err.message.includes('desconectado')) {
-          setIsConnected(false);
-        }
-        throw err;
-      }
-    },
-    [isConnected]
-  );
-
-  const disconnectModbus = useCallback(async () => {
-    try {
-      console.log('Desconectando Modbus...');
-      const resp = await fetch('/api/modbus/disconnect', { method: 'DELETE' });
+      const resp = await fetch(
+        `/api/modbus/connect?port=${encodeURIComponent(port)}&baudrate=${baud}&unit=${unit}`,
+        { method: 'POST' }
+      );
       const json = await resp.json();
       if (!resp.ok || !json.success) {
-        console.error('Disconnect error response:', json);
-        throw new Error(json.error || 'Falha ao desconectar');
+        throw new Error(json.error || 'Falha na conexão Modbus');
       }
-      setIsConnected(false);
-      if (checkTimeoutRef.current) {
-        clearTimeout(checkTimeoutRef.current);
-        checkTimeoutRef.current = null;
+      setPortName(port);
+      setBaudRate(baud);
+      setUnitId(unit);
+      setIsConnected(true);
+    },
+    []
+  );
+
+  // Chama a API de leitura
+  const readRegisters = useCallback(
+    async (start: number, count: number): Promise<number[]> => {
+      const resp = await fetch(
+        `/api/modbus/read?start=${start}&count=${count}`,
+        { method: 'GET' }
+      );
+      const json = await resp.json();
+      if (!resp.ok || !json.success) {
+        throw new Error(json.error || 'Falha na leitura Modbus');
       }
-    } catch (err) {
-      console.error('Erro ao desconectar:', err);
-      throw err;
+      return json.data;
+    },
+    []
+  );
+
+  // Chama a API de escrita
+  const writeRegister = useCallback(
+    async (address: number, value: number) => {
+      const resp = await fetch('/api/modbus/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address, value })
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.success) {
+        throw new Error(json.error || 'Falha na escrita Modbus');
+      }
+    },
+    []
+  );
+
+  // Chama a API de desconexão
+  const disconnectModbus = useCallback(async () => {
+    const resp = await fetch('/api/modbus/disconnect', { method: 'DELETE' });
+    const json = await resp.json();
+    if (!resp.ok || !json.success) {
+      throw new Error(json.error || 'Falha na desconexão Modbus');
+    }
+    setIsConnected(false);
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current);
+      checkTimeoutRef.current = null;
     }
   }, []);
 
-  // Manter refs atualizadas para usar em checkConnection
-  readRegistersRef.current = readRegisters;
-  disconnectRef.current = disconnectModbus;
-
-  //
-  // 2) Verificação periódica e reconexão automática
-  //
+  // Verificação periódica e reconexão automática
   const checkConnection = useCallback(async () => {
-    if (!isConnected || reconnectingRef.current || isChecking) return;
+    if (!isConnected || reconnectingRef.current) return;
     const now = Date.now();
     if (now - lastCheckRef.current < MIN_CHECK_INTERVAL) return;
-
+    lastCheckRef.current = now;
+    setIsChecking(true);
     try {
-      setIsChecking(true);
-      lastCheckRef.current = now;
-
-      // Delay antes de testar (1500ms para dar tempo à porta liberar)
-      await new Promise(r => setTimeout(r, 1500));
-
-      // Leitura de teste
-      await readRegistersRef.current!(0, 1);
-      console.log('Verificação bem-sucedida');
+      await new Promise(r => setTimeout(r, 1500));          // aguarda liberação
+      await readRegisters(0, 1);                            // teste de leitura
     } catch (err) {
-      console.warn('Verificação falhou, reconectando...', err);
-      if (!reconnectingRef.current) {
-        reconnectingRef.current = true;
-        try {
-          await disconnectRef.current!();
-          // Aguarda 3000ms para garantir que a COM8 seja liberada
-          await new Promise(r => setTimeout(r, 3000));
-          await connectModbus(portName, baudRate, unitId);
-          console.log('Reconexão bem-sucedida');
-        } catch (e) {
-          console.error('Falha na reconexão:', e);
-          setIsConnected(false);
-        } finally {
-          reconnectingRef.current = false;
-        }
+      reconnectingRef.current = true;
+      try {
+        await disconnectModbus();
+        await new Promise(r => setTimeout(r, 3000));        // liberar a porta
+        await connectModbus(portName, baudRate, unitId);
+      } catch {
+        setIsConnected(false);
+      } finally {
+        reconnectingRef.current = false;
       }
     } finally {
       setIsChecking(false);
       if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
       checkTimeoutRef.current = setTimeout(checkConnection, MIN_CHECK_INTERVAL);
     }
-  }, [isConnected, isChecking, portName, baudRate, unitId, connectModbus]);
+  }, [isConnected, portName, baudRate, unitId, readRegisters, disconnectModbus, connectModbus]);
 
-  // Inicia a verificação assim que houver conexão
+  // dispara monitoramento após conectar
   useEffect(() => {
-    if (isConnected) {
-      console.log('Iniciando monitoramento de conexão...');
-      checkConnection();
-    }
+    if (isConnected) checkConnection();
     return () => {
       if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
     };
   }, [isConnected, checkConnection]);
 
-  //
-  // 3) Desconectar ao fechar a página ou desmontar o Provider
-  //
+  // desconecta no unload
   useEffect(() => {
-    const handleBeforeUnload = async () => {
-      if (isConnected) {
-        try {
-          await fetch('/api/modbus/disconnect', { method: 'DELETE' });
-        } catch (e) {
-          console.error('Erro no beforeunload disconnect:', e);
-        }
-      }
+    const onUnload = async () => {
+      if (isConnected) await disconnectModbus();
     };
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('beforeunload', onUnload);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (isConnected) {
-        disconnectModbus().catch(console.error);
-      }
+      window.removeEventListener('beforeunload', onUnload);
+      if (isConnected) disconnectModbus();
     };
   }, [isConnected, disconnectModbus]);
 
-  //
-  // 4) Provedor e hook
-  //
   const value = useMemo(
     () => ({
       isConnected,
@@ -508,17 +438,11 @@ export function ModbusProvider({ children }: { children: ReactNode }) {
     ]
   );
 
-  return (
-    <ModbusContext.Provider value={value}>
-      {children}
-    </ModbusContext.Provider>
-  );
+  return <ModbusContext.Provider value={value}>{children}</ModbusContext.Provider>;
 }
 
 export function useModbus() {
   const ctx = useContext(ModbusContext);
-  if (!ctx) {
-    throw new Error('useModbus deve ser usado dentro de ModbusProvider');
-  }
+  if (!ctx) throw new Error('useModbus deve ser usado dentro de ModbusProvider');
   return ctx;
 }

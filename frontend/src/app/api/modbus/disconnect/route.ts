@@ -15,15 +15,16 @@
 
 //
 import { NextResponse } from 'next/server';
-import { disconnectModbus } from '@/app/lib/modbusClient';
+import { closeModbusClient } from '@/app/lib/modbusClient';
 
 export async function DELETE() {
   try {
-    disconnectModbus();
+    await closeModbusClient();
     return NextResponse.json({ success: true });
-  } catch (e: any) {
+  } catch (err: any) {
+    console.error('Erro ao desconectar Modbus:', err);
     return NextResponse.json(
-      { success: false, error: e.message || 'Erro ao desconectar' },
+      { success: false, error: err.message || 'Erro na desconexão' },
       { status: 500 }
     );
   }

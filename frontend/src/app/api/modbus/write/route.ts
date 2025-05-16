@@ -23,9 +23,10 @@ export async function POST(req: Request) {
     const { address, value } = await req.json();
     await writeRegister(address, value);
     return NextResponse.json({ success: true });
-  } catch (e: any) {
+  } catch (err: any) {
+    console.error('Erro na escrita Modbus:', err);
     return NextResponse.json(
-      { success: false, error: e.message || 'Erro na escrita' },
+      { success: false, error: err.message || 'Erro na escrita' },
       { status: 500 }
     );
   }
