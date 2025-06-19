@@ -9,14 +9,12 @@ import { Label } from "@/components/ui/label"
 import { RefreshCw } from "lucide-react"
 import { useWhitekon } from "@/contexts/whitekon-context"
 
-interface ConnectionTabProps {
-  onConnectionChangeAction: (connected: boolean) => void
-}
+interface ConnectionTabProps {}
 
-export function ConnectionTab({ onConnectionChangeAction }: ConnectionTabProps) {
+export function ConnectionTab({}: ConnectionTabProps) { 
   const [port, setPort] = useState("")
-  const [baudRate, setBaudRate] = useState("115200")
-  const [address, setAddress] = useState("4")
+  const [baudRate, setBaudRate] = useState("")
+  const [address, setAddress] = useState("")
   const [availablePorts, setAvailablePorts] = useState([
     "COM1",
     "COM2",
@@ -37,12 +35,6 @@ export function ConnectionTab({ onConnectionChangeAction }: ConnectionTabProps) 
 
   const { isConnected, isConnecting, connectionParams, connect, disconnect } = useWhitekon()
 
-  // Sincroniza com o contexto
-  useEffect(() => {
-    onConnectionChangeAction(isConnected)
-  }, [isConnected, onConnectionChangeAction])
-
-  // Carrega parâmetros salvos se existirem
   useEffect(() => {
     if (connectionParams) {
       setPort(connectionParams.port)
