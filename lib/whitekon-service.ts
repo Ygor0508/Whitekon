@@ -1,7 +1,6 @@
 import { WhitekonRegisters, CalibrationCommands, ControlModes } from "./whitekon-registers"
 
 export interface WhitekonData {
-  // Dados reais dos registradores - sem simulação
   registers: { [key: number]: number | null }
   // Dados decodificados da nova API
   brancura?: {
@@ -321,5 +320,34 @@ export class WhitekonService {
   }
   public async setAutoMode(auto: boolean): Promise<boolean> {
     return this.writeRegister(WhitekonRegisters.AUTOMATICO_MANUAL, auto ? ControlModes.AUTOMATICO : ControlModes.MANUAL)
+  }
+
+  // Métodos adicionados para corrigir os erros
+  public async setIntegrationTime(timeCode: number): Promise<boolean> {
+    const currentValue = await this.readRegister(WhitekonRegisters.TEMPO_INTEGRACAO_E_GANHO)
+    if (currentValue === null) return false
+    const gain = currentValue & 0xff
+    const newValue = (timeCode << 8) | gain
+    return this.writeRegister(WhitekonRegisters.TEMPO_INTEGRACAO_E_GANHO, newValue)
+  }
+
+  public async setGain(gainCode: number): Promise<boolean> {
+    const currentValue = await this.readRegister(WhitekonRegisters.TEMPO_INTEGRACAO_E_GANHO)
+    if (currentValue === null) return false
+    const time = currentValue & 0xff00
+    const newValue = time | gainCode
+    return this.writeRegister(WhitekonRegisters.TEMPO_INTEGRACAO_E_GANHO, newValue)
+  }
+
+  public async setOffset(offsetValue: number): Promise<boolean> {
+    // A lógica no componente multiplica por 10, então assumimos o valor já ajustado
+    return this.writeRegister(WhitekonRegisters.OFFSET, offsetValue)
+  }
+
+  public async setBrightnessLimits(min: number, max: number): Promise<boolean> {
+    const minSuccess = await this.writeRegister(WhitekonRegisters.BRANCURA_MINIMA, min)
+    if (!minSuccess) return false
+    const maxSuccess = await this.writeRegister(WhitekonRegisters.BRANCURA_MAXIMA, max)
+    return maxSuccess
   }
 }
