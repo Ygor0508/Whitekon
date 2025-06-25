@@ -224,7 +224,7 @@ export function DashboardTab({ activeWhitekon, onWhitekonChangeAction }: Dashboa
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {whitekonUnits.length > 0 ? (
           whitekonUnits.map((unit) => (
             <Card
@@ -234,7 +234,7 @@ export function DashboardTab({ activeWhitekon, onWhitekonChangeAction }: Dashboa
             >
               <CardHeader className="p-4">
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-lg">WhiteKon #{unit.id}</CardTitle>
+                  <CardTitle className="text-lg">WhiteKon {unit.id}</CardTitle>
                   <Badge
                     variant={unit.status === "online" ? "default" : "destructive"}
                     className={unit.status === "online" ? "bg-[#00A651]" : ""}
@@ -267,12 +267,12 @@ export function DashboardTab({ activeWhitekon, onWhitekonChangeAction }: Dashboa
             </p>
           </div>
         )}
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Monitor WhiteKon #{activeWhitekon}</CardTitle>
+            <CardTitle>Monitor WhiteKon {activeWhitekon}</CardTitle>
           </CardHeader>
           <CardContent>
             <WhitekonMonitor whitekonId={activeWhitekon} />
@@ -293,7 +293,7 @@ export function DashboardTab({ activeWhitekon, onWhitekonChangeAction }: Dashboa
                   >
                     <div>
                       <p className="font-medium text-red-800">{alarm.type}</p>
-                      <p className="text-sm text-gray-500">WhiteKon #{alarm.unit}</p>
+                      <p className="text-sm text-gray-500">WhiteKon {alarm.unit}</p>
                     </div>
                     <div className="text-sm text-gray-500">{alarm.time}</div>
                   </div>

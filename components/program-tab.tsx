@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { WhitekonService } from "@/lib/whitekon-service"
 import { useToast } from "@/hooks/use-toast"
+import { ALARM_TYPES } from "@/lib/types"
 
 interface ProgramTabProps {
   whitekonId: number
@@ -21,6 +23,7 @@ export function ProgramTab({ whitekonId }: ProgramTabProps) {
   const [ledStatus, setLedStatus] = useState(false)
   const [whitekonData, setWhitekonData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [calibrationAlarms, setCalibrationAlarms] = useState<any[]>([])
 
   const { toast } = useToast()
   const whitekonService = WhitekonService.getInstance()
@@ -45,6 +48,26 @@ export function ProgramTab({ whitekonId }: ProgramTabProps) {
   const [maxDark, setMaxDark] = useState("")
   const [minLight, setMinLight] = useState("")
 
+  // Função para processar apenas os alarmes de calibração
+  const processCalibrationAlarms = (alarmBits: number) => {
+    const calibrationAlarmTypes = ALARM_TYPES.filter(alarm => alarm.type === "CALIBRAÇÃO")
+    const newAlarms: any[] = []
+
+    calibrationAlarmTypes.forEach(alarmType => {
+      if (alarmBits & (1 << alarmType.bit)) {
+        newAlarms.push({
+          id: Date.now() + alarmType.bit,
+          type: alarmType.description,
+          bit: alarmType.bit,
+          unit: whitekonId,
+          time: new Date().toLocaleTimeString(),
+        })
+      }
+    })
+
+    setCalibrationAlarms(newAlarms)
+  }
+
   useEffect(() => {
     const unsubscribe = whitekonService.onDataUpdate((data) => {
       if (data?.registers) {
@@ -62,6 +85,11 @@ export function ProgramTab({ whitekonId }: ProgramTabProps) {
           },
         }
         setWhitekonData(convertedData)
+
+        // Processar alarmes de calibração usando o registro 10
+        if (data.registers[10]) {
+          processCalibrationAlarms(data.registers[10])
+        }
       }
     })
 
@@ -431,6 +459,52 @@ export function ProgramTab({ whitekonId }: ProgramTabProps) {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Alarmes de Calibração</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {calibrationAlarms.length > 0 ? (
+              <div className="space-y-3">
+                {calibrationAlarms.map((alarm) => (
+                  <div
+                    key={alarm.id}
+                    className={`p-3 border rounded-md flex justify-between items-start ${
+                      alarm.bit === 6 
+                        ? "bg-green-50 border-green-200" 
+                        : "bg-red-50 border-red-200"
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <p className={`font-medium ${
+                        alarm.bit === 6 ? "text-green-800" : "text-red-800"
+                      }`}>
+                        {alarm.type}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        WhiteKon {alarm.unit}
+                      </p>
+                      <Badge 
+                        variant={alarm.bit === 6 ? "outline" : "destructive"} 
+                        className="mt-2"
+                      >
+                        Bit {alarm.bit}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-gray-500 ml-4">
+                      {alarm.time}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                Nenhum alarme de calibração ativo
+              </div>
+            )}
           </CardContent>
         </Card>
 

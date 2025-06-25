@@ -104,3 +104,7 @@ export const OPERATION_MODES = [
   { code: 2, value: "Limpeza" },
   { code: 3, value: "Máquina Parada" },
 ]
+
+
+
+

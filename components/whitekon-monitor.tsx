@@ -55,16 +55,16 @@ export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
     }
   }, [contextData])
 
-  // Simulação de heartbeat apenas para indicar que o componente está ativo
-  useEffect(() => {
-    if (!isConnected) return
+  // // Simulação de heartbeat apenas para indicar que o componente está ativo
+  // useEffect(() => {
+  //   if (!isConnected) return
 
-    const interval = setInterval(() => {
-      setHeartbeat((prev) => !prev)
-    }, 1000)
+  //   const interval = setInterval(() => {
+  //     setHeartbeat((prev) => !prev)
+  //   }, 1000)
 
-    return () => clearInterval(interval)
-  }, [isConnected])
+  //   return () => clearInterval(interval)
+  // }, [isConnected])
 
   // Se não há dados, mostra mensagem
   if (!isConnected) {
@@ -151,11 +151,11 @@ export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-center">
+              {/* <div className="mt-4 flex justify-center">
                 <Button variant="outline" className={`w-20 h-20 rounded-full ${heartbeat ? "bg-green-100" : ""}`}>
                   <Heart className={`h-10 w-10 ${heartbeat ? "text-green-500" : "text-gray-400"}`} />
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
         </CardContent>

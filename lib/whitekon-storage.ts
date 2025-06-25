@@ -1,7 +1,6 @@
 import type { WhiteKon } from "./types"
 
 const STORAGE_KEY = "whitekon-devices"
-
 export class WhiteKonStorage {
   static getAll(): WhiteKon[] {
     if (typeof window === "undefined") return []
