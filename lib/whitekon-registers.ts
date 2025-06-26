@@ -1,4 +1,4 @@
-// Definição dos registradores do WhiteKon conforme a tabela Modbus fornecida
+// Definição dos registradores do WhiteKon
 export const WhitekonRegisters = {
   // Registros de banco de dados R/W
   MODO_OPERACAO: 0, // 0-Normal, 1-Calibração, 2-Limpeza, 3-Máquina Parada
