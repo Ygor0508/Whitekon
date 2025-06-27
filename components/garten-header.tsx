@@ -18,7 +18,7 @@ export function GartenHeader() {
 
         <nav className="hidden md:flex items-center gap-6">
           <Link href="/" className="text-gray-600 hover:text-[#a60000] transition-colors">
-            Dashboard
+            Dispositivos
           </Link>
           <Link href="/whitekon/lista" className="text-gray-600 hover:text-[#a60000] transition-colors">
             WhiteKons
