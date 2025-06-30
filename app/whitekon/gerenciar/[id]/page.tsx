@@ -1572,6 +1572,7 @@
 
 
 
+// // o mais correto, atualizado, testado e funcionando
 
 "use client"
 
@@ -2102,7 +2103,7 @@ export default function GerenciarWhiteKonPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="calibration" className="space-y-6" onValueChange={handleTabChange}>
+      <Tabs defaultValue="dashboard" className="space-y-6" onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="connection">Conexão</TabsTrigger>
@@ -2317,3 +2318,17 @@ export default function GerenciarWhiteKonPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

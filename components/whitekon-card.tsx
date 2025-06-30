@@ -518,6 +518,8 @@ export function WhiteKonCard({ device }: WhiteKonCardProps) {
         }
       };
 
+      const contadorAmostras = registers[19];
+
       setRealtimeData({
         // [FIX] Label abreviado para evitar quebra de linha
         tempCalibracao: registers[6] !== null && registers[6] !== 65535 ? (registers[6] / 10).toFixed(1) + " °C" : "---",
@@ -526,7 +528,7 @@ export function WhiteKonCard({ device }: WhiteKonCardProps) {
         brancura: registers[5] !== null ? (registers[5] / 10).toFixed(1) + " %" : "---",
         brancuraOnline: registers[21] !== null ? (registers[21] / 10).toFixed(1) + " %" : "---",
         desvioPadrao: registers[11] !== null ? (registers[11] / 100).toFixed(2) + " %" : "---",
-        qtdAmostras: registers[19] ?? null,
+        qtdAmostras: contadorAmostras != null ? contadorAmostras + 1 : null,
         // [FIX] Usando o registrador 29 para modo Automático/Manual
         modoOperacao: getModoOperacao(registers[29]), 
       });

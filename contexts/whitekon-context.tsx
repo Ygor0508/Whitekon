@@ -240,6 +240,8 @@
 
 
 // contexts/whitekon-context.tsx
+// a mais atualizada com a parte do gráfico arrumada 
+// mudei o whtekon-service e começo a dar erro nessa mas a parte que da certo ta marcada no código
 
 "use client"
 
@@ -380,35 +382,92 @@ export function WhitekonProvider({ children }: { children: React.ReactNode }) {
     return history.filter(entry => entry.timestamp >= oneHourAgo);
   }, [ONE_HOUR_MS]);
 
-  useEffect(() => {
-      const unsubscribe = whitekonService.onDataUpdate((data) => {
-          setWhitekonData(data)
-          if (data?.registers) {
-              const brancuraMedia = data.registers[5];
-              if (brancuraMedia !== null && brancuraMedia !== undefined) {
-                  const now = new Date();
-                  const timestamp = now.getTime();
-                  const newHistoryEntry: ChartDataPoint = {
-                      time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                      timestamp,
-                      brancuraMedia: brancuraMedia / 10,
-                      contadorAmostras: data.registers[19],
-                      brancuraOnline: data.registers[21] != null ? data.registers[21] / 10 : null,
-                  };
+//   useEffect(() => {
+//       const unsubscribe = whitekonService.onDataUpdate((data) => {
+//           setWhitekonData(data)
+          
+//           if (data?.registers) {
+//     const brancuraMedia = data.registers[5];
+//     const contadorAmostras = data.registers[19];
+//     const brancuraOnlineRaw = data.registers[21];
 
-                  setChartHistory(prevHistory => {
-                      const filteredHistory = filterHistoryByTime(prevHistory, timestamp);
-                      const lastEntry = filteredHistory[filteredHistory.length - 1];
-                      if (lastEntry && (timestamp - lastEntry.timestamp) < 500) {
-                          const newHistory = [...filteredHistory.slice(0, -1), newHistoryEntry];
-                          return newHistory;
-                      }
-                      return [...filteredHistory, newHistoryEntry];
-                  });
-              }
+//     if (brancuraMedia !== null && brancuraMedia !== undefined) {
+//         const now = new Date();
+//         const timestamp = now.getTime();
+        
+//         const newHistoryEntry: ChartDataPoint = {
+//             time: now.toLocaleTimeString('pt-BR', { 
+//                 hour: '2-digit', 
+//                 minute: '2-digit', 
+//                 second: '2-digit' 
+//             }),
+//             timestamp,
+//             brancuraMedia: brancuraMedia / 10,
+//             // --- LINHA MODIFICADA ---
+//             contadorAmostras: contadorAmostras && contadorAmostras > 0 ? contadorAmostras : null,
+//             // --- FIM DA LINHA MODIFICADA ---
+//             brancuraOnline: brancuraOnlineRaw != null ? brancuraOnlineRaw / 10 : null,
+//         };
+
+//         setChartHistory(prevHistory => {
+//             const filteredHistory = filterHistoryByTime(prevHistory, timestamp);
+//             const lastEntry = filteredHistory[filteredHistory.length - 1];
+//             if (lastEntry && (timestamp - lastEntry.timestamp) < 500) {
+//                 const newHistory = [...filteredHistory.slice(0, -1), newHistoryEntry];
+//                 return newHistory;
+//             }
+//             return [...filteredHistory, newHistoryEntry];
+//         });
+//     }
+// }
+//       });
+//       return () => unsubscribe()
+//   }, [whitekonService, filterHistoryByTime])
+
+
+  useEffect(() => {
+    const unsubscribe = whitekonService.onDataUpdate((data) => {
+        setWhitekonData(data)
+        
+        if (data?.registers) {
+          const brancuraMedia = data.registers[5];
+          const contadorAmostras = data.registers[19];
+          const brancuraOnlineRaw = data.registers[21];
+
+          // A validação de brancuraMedia continua a mesma, pois é o gatilho para adicionar um ponto.
+          if (brancuraMedia !== null && brancuraMedia !== undefined) {
+              const now = new Date();
+              const timestamp = now.getTime();
+              
+              const newHistoryEntry: ChartDataPoint = {
+                  time: now.toLocaleTimeString('pt-BR', { 
+                      hour: '2-digit', 
+                      minute: '2-digit', 
+                      second: '2-digit' 
+                  }),
+                  timestamp,
+                  brancuraMedia: brancuraMedia / 10,
+                  // --- LINHA MODIFICADA ---
+                  // Verifica se o contador não é nulo/undefined. Se for um número (incluindo 0), soma 1.
+                  // Assim, a amostra 0 vira 1, a 1 vira 2, etc.
+                  contadorAmostras: contadorAmostras != null ? contadorAmostras + 1 : null,
+                  // --- FIM DA MODIFICAÇÃO ---
+                  brancuraOnline: brancuraOnlineRaw != null ? brancuraOnlineRaw / 10 : null,
+              };
+
+              setChartHistory(prevHistory => {
+                  const filteredHistory = filterHistoryByTime(prevHistory, timestamp);
+                  const lastEntry = filteredHistory[filteredHistory.length - 1];
+                  if (lastEntry && (timestamp - lastEntry.timestamp) < 500) {
+                      const newHistory = [...filteredHistory.slice(0, -1), newHistoryEntry];
+                      return newHistory;
+                  }
+                  return [...filteredHistory, newHistoryEntry];
+              });
           }
-      });
-      return () => unsubscribe()
+        }
+    });
+    return () => unsubscribe()
   }, [whitekonService, filterHistoryByTime])
 
   useEffect(() => {
@@ -438,3 +497,10 @@ export function WhitekonProvider({ children }: { children: React.ReactNode }) {
 
   return <WhitekonContext.Provider value={value}>{children}</WhitekonContext.Provider>
 }
+
+
+
+
+
+
+

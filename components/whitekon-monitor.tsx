@@ -47,6 +47,7 @@ export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
   const brancuraMedia = registers[5] !== null ? registers[5] / 10 : null;
   const brancuraOnline = registers[21] !== null ? registers[21] / 10 : null;
   const desvioPadrao = registers[11] !== null ? registers[11] / 100 : null;
+  const qtdAmostras = registers[19] != null ? registers[19] + 1 : null;
   const gain = registers[34] !== null ? registers[34] & 0xff : null;
   const tempoIntegracao = registers[34] !== null ? (registers[34] >> 8) & 0xff : null;
   const ledStatus = registers[28] !== null ? (registers[28] & 1) === 1 : null;
@@ -112,7 +113,7 @@ export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
                 </div>
                 <div className="flex justify-between">
                   <Label>Qtd. Amostras:</Label>
-                  <span className="font-mono">{formatValue(registers[19])}</span>
+                  <span className="font-mono">{formatValue(qtdAmostras)}</span>
                 </div>
               </div>
             </div>

@@ -557,7 +557,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card as UICard, CardContent as UICardContent } from "@/components/ui/card" // Renomeado para evitar conflito
+import { Card as UICard, CardContent as UICardContent } from "@/components/ui/card"
 import { WhiteKonStorage } from "@/lib/whitekon-storage"
 import type { WhiteKon } from "@/lib/types"
 import { Plus, Loader2, Settings, Edit, Trash2 } from "lucide-react"
@@ -577,9 +577,14 @@ export default function ListaWhiteKonPage() {
   const { toast } = useToast()
 
   const loadDevices = () => {
+    // try {
+    //   const loadedDevices = WhiteKonStorage.getAll()
+    //   setDevices(loadedDevices.sort((a, b) => a.rtuAddress - b.rtuAddress));
     try {
       const loadedDevices = WhiteKonStorage.getAll()
-      setDevices(loadedDevices.sort((a, b) => a.rtuAddress - b.rtuAddress));
+      // Adicionada a ordenação aqui
+      const sortedDevices = loadedDevices.sort((a, b) => a.rtuAddress - b.rtuAddress);
+      setDevices(sortedDevices)
     } catch (error) {
       console.error("Erro ao carregar dispositivos:", error)
       toast({
@@ -728,3 +733,9 @@ export default function ListaWhiteKonPage() {
     </div>
   )
 }
+
+
+
+
+
+

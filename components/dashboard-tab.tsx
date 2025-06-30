@@ -1205,6 +1205,10 @@
 
 
 
+
+
+
+// esta funcionando, o codigo mais atualizado e funcional que temos até agora
 "use client"
 
 import { useState, useEffect } from "react"
@@ -1591,3 +1595,12 @@ export function DashboardTab({ activeWhitekon, onWhitekonChangeAction }: Dashboa
     </div>
   )
 }
+
+
+
+
+
+
+
+
+

@@ -178,7 +178,7 @@ import { WhiteKonStorage } from "@/lib/whitekon-storage"
 import type { WhiteKon } from "@/lib/types"
 import { Plus, Settings, Wifi, WifiOff, Activity, Loader2 } from "lucide-react"
 import Link from "next/link"
-import { useWhitekon } from "@/contexts/whitekon-context" // 1. Importar o hook
+import { useWhitekon } from "@/contexts/whitekon-context"
 
 export default function HomePage() {
   const [devices, setDevices] = useState<WhiteKon[]>([])
@@ -248,7 +248,7 @@ export default function HomePage() {
         </Button>
       </div>
 
-      {/* Cards de Estatísticas agora são dinâmicos */}
+      {/* Cards de Estatísticas dinâmicos */}
       <div className="grid gap-6 md:grid-cols-3 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -284,7 +284,7 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {/* A lista de dispositivos também é atualizada em tempo real */}
+      {/* lista de dispositivos é atualizada em tempo real */}
       {totalDevices > 0 ? (
         <Card>
           <CardHeader>

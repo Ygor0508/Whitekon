@@ -1381,6 +1381,7 @@
 
 
 // lib/whitekon-service.ts
+// O mais correto até agora
 
 import { WhitekonRegisters, CalibrationCommands, ControlModes } from "./whitekon-registers"
 
@@ -1391,8 +1392,24 @@ export interface WhitekonData {
     online: number | null
     desvio_padrao: number | null
   }
-  // ... outras propriedades
+  temperatura?: {
+    calibracao: number | null
+    online: number | null
+  }
+  rgb?: {
+    red: number | null
+    green: number | null
+    blue: number | null
+    clear: number | null
+  }
+  blue_calibracao?: {
+    preto: number | null
+    branco: number | null
+  }
+  amostras?: number | null
+  alarmes?: number | null
 }
+
 
 export class WhitekonService {
   private static instance: WhitekonService
@@ -1407,8 +1424,8 @@ export class WhitekonService {
   private currentBaudRate = 115200
   private currentAddress = 4
 
-  private isBusy = false
-  private lastStatusCheck = 0
+  private isBusy = false // Flag para evitar operações simultâneas
+  private lastStatusCheck = 0 // Throttling para status check
 
   private constructor() {}
 
@@ -1661,3 +1678,12 @@ export class WhitekonService {
     return maxSuccess
   }
 }
+
+
+
+
+
+
+
+
+

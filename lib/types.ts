@@ -12,6 +12,7 @@ export interface WhiteKon {
 }
 
 export interface WhiteKonData {
+  // registers: { [key: number]: number | null }
   // Dados de leitura
   brancuraMedia: number | null
   brancuraOnline: number | null

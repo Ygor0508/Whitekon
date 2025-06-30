@@ -1,9 +1,24 @@
+"use client"
 import Link from "next/link"
+import React, { useState, useEffect } from "react"
 import { Clock, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 export function GartenHeader() {
+  // Estado para armazenar a hora atual
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Efeito para atualizar a hora a cada segundo
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    // Limpa o intervalo quando o componente é desmontado
+    return () => clearInterval(timer);
+  }, []); // O array vazio garante que o efeito rode apenas uma vez
+
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="container mx-auto px-4 py-2 flex items-center justify-between">
@@ -31,8 +46,10 @@ export function GartenHeader() {
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-2 text-gray-600">
             <Clock className="h-4 w-4" />
-            <span className="text-sm">{new Date().toLocaleString("pt-BR")}</span>
+            <span className="text-sm">{currentTime.toLocaleString("pt-BR")}</span>
           </div>
+
+        
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild className="md:hidden">
