@@ -1,254 +1,18 @@
-// "use client"
-
-// import type React from "react"
-// import { createContext, useContext, useEffect, useState, useCallback } from "react"
-// import { WhitekonService } from "@/lib/whitekon-service"
-// import { useToast } from "@/hooks/use-toast"
-
-// export interface ChartDataPoint {
-//   time: string;
-//   timestamp: number; // melhorar controle temporal
-//   brancuraMedia: number | null;
-//   contadorAmostras: number | null;
-//   brancuraOnline: number | null;
-// }
-
-// interface WhitekonContextType {
-//   isConnected: boolean
-//   isConnecting: boolean
-//   connectionParams: {
-//     port: string
-//     baudRate: string
-//     address: string
-//   } | null
-//   whitekonData: any,
-//   chartHistory: ChartDataPoint[],
-//   connect: (port: string, baudRate: string, address: string) => Promise<boolean>
-//   disconnect: () => Promise<void>
-//   checkConnection: () => Promise<boolean>
-//   readRegister: (address: number) => Promise<number | null>
-//   writeRegister: (address: number, value: number) => Promise<boolean>
-//   readAllRegisters: () => Promise<{ [key: number]: number | null }>
-//   clearChartHistory: () => void //método para limpar histórico
-// }
-
-// const WhitekonContext = createContext<WhitekonContextType | undefined>(undefined)
-
-// export function useWhitekon() {
-//   const context = useContext(WhitekonContext)
-//   if (context === undefined) {
-//     throw new Error("useWhitekon must be used within a WhitekonProvider")
-//   }
-//   return context
-// }
-
-// export function WhitekonProvider({ children }: { children: React.ReactNode }) {
-//   const [isConnected, setIsConnected] = useState(false)
-//   const [isConnecting, setIsConnecting] = useState(false)
-//   const [connectionParams, setConnectionParams] = useState<{
-//     port: string
-//     baudRate: string
-//     address: string
-//   } | null>(null)
-//   const [whitekonData, setWhitekonData] = useState<any>(null)
-//   const [chartHistory, setChartHistory] = useState<ChartDataPoint[]>([]);
-
-//   const { toast } = useToast()
-//   const whitekonService = WhitekonService.getInstance()
-
-//   // Constante para controle temporal (1 hora em milissegundos)
-//   const ONE_HOUR_MS = 60 * 60 * 1000;
-
-//   const connect = useCallback(
-//     async (port: string, baudRate: string, address: string): Promise<boolean> => {
-//       if (isConnecting) return false
-      
-//       setIsConnecting(true)
-//       try {
-//         const success = await whitekonService.connect(port, baudRate, address)
-        
-//         if (success) {
-//           await whitekonService.readRegister(0)
-          
-//           toast({ title: "Conectado. Configurando estado padrão do dispositivo..." })
-//           await whitekonService.writeRegister(29, 0)
-//           await whitekonService.writeRegister(0, 0)
-//           await whitekonService.writeRegister(28, 0)
-          
-//           setIsConnected(true)
-//           setConnectionParams({ port, baudRate, address })
-//           localStorage.setItem("whitekon-connection", JSON.stringify({ port, baudRate, address }))
-          
-//           toast({
-//             title: "Dispositivo Pronto",
-//             description: `Conectado em modo Normal e Automático (Endereço ${address})`,
-//           })
-//           return true
-//         } else {
-//             throw new Error("Falha ao abrir a porta de comunicação.")
-//         }
-//       } catch (error: any) {
-//         setIsConnected(false)
-//         setConnectionParams(null)
-//         await whitekonService.disconnect()
-//         toast({
-//           title: "Erro de conexão",
-//           description: error.message || "Não foi possível comunicar com o dispositivo.",
-//           variant: "destructive",
-//         })
-//         return false
-//       } finally {
-//         setIsConnecting(false)
-//       }
-//     },
-//     [isConnecting, toast, whitekonService]
-//   )
-
-//   const disconnect = useCallback(async (): Promise<void> => {
-//     await whitekonService.disconnect()
-//     setIsConnected(false)
-//     setConnectionParams(null)
-//     setWhitekonData(null)
-//     setChartHistory([])
-//     localStorage.removeItem("whitekon-connection")
-//     toast({ title: "Desconectado" })
-//   }, [toast, whitekonService])
-  
-//   const checkConnection = useCallback(async (): Promise<boolean> => {
-//     return isConnected
-//   }, [isConnected])
-
-//   const clearChartHistory = useCallback(() => {
-//     setChartHistory([])
-//     toast({ title: "Histórico do gráfico limpo" })
-//   }, [toast])
-
-//   // Função otimizada para filtrar dados por tempo
-//   const filterHistoryByTime = useCallback((history: ChartDataPoint[], currentTime: number) => {
-//     const oneHourAgo = currentTime - ONE_HOUR_MS;
-//     return history.filter(entry => entry.timestamp >= oneHourAgo);
-//   }, [ONE_HOUR_MS]);
-
-// useEffect(() => {
-//     const unsubscribe = whitekonService.onDataUpdate((data) => {
-//         console.log('🔄 WhiteKon Context - Dados recebidos:', {
-//             timestamp: new Date().toISOString(),
-//             hasRegisters: !!data?.registers,
-//             registers: data?.registers ? {
-//                 reg5_brancuraMedia: data.registers[5],
-//                 reg19_contador: data.registers[19], 
-//                 reg21_brancuraOnline: data.registers[21]
-//             } : null
-//         });
-        
-//         setWhitekonData(data)
-        
-//         if (data?.registers) {
-//             const brancuraMedia = data.registers[5];
-//             const contadorAmostras = data.registers[19];
-//             const brancuraOnlineRaw = data.registers[21];
-            
-//             console.log('📊 Processando valores para gráfico:', {
-//                 brancuraMedia: { raw: brancuraMedia, processed: brancuraMedia != null ? brancuraMedia / 10 : null },
-//                 contadorAmostras: { raw: contadorAmostras, processed: contadorAmostras },
-//                 brancuraOnline: { raw: brancuraOnlineRaw, processed: brancuraOnlineRaw != null ? brancuraOnlineRaw / 10 : null }
-//             });
-            
-//             // Só adiciona ao histórico se houver dados válidos de brancura
-//             if (brancuraMedia !== null && brancuraMedia !== undefined) {
-//                 const now = new Date();
-//                 const timestamp = now.getTime();
-                
-//                 const newHistoryEntry: ChartDataPoint = {
-//                     time: now.toLocaleTimeString('pt-BR', { 
-//                         hour: '2-digit', 
-//                         minute: '2-digit', 
-//                         second: '2-digit' 
-//                     }),
-//                     timestamp,
-//                     brancuraMedia: brancuraMedia / 10,
-//                     contadorAmostras: contadorAmostras, // Mantém valor original
-//                     brancuraOnline: brancuraOnlineRaw != null ? brancuraOnlineRaw / 10 : null,
-//                 };
-
-//                 console.log('✅ Novo ponto adicionado ao histórico:', newHistoryEntry);
-
-//                 setChartHistory(prevHistory => {
-//                     // Filtra dados antigos (mais de 1 hora)
-//                     const filteredHistory = filterHistoryByTime(prevHistory, timestamp);
-                    
-//                     // Evita duplicatas verificando se já existe um ponto muito próximo no tempo
-//                     const lastEntry = filteredHistory[filteredHistory.length - 1];
-//                     if (lastEntry && (timestamp - lastEntry.timestamp) < 500) {
-//                         // Se o último ponto foi há menos de 500ms, substitui em vez de adicionar
-//                         const newHistory = [...filteredHistory.slice(0, -1), newHistoryEntry];
-//                         console.log('🔄 Ponto substituído, total de pontos:', newHistory.length);
-//                         return newHistory;
-//                     }
-                    
-//                     const newHistory = [...filteredHistory, newHistoryEntry];
-//                     console.log('➕ Ponto adicionado, total de pontos:', newHistory.length);
-//                     return newHistory;
-//                 });
-//             } else {
-//                 console.log('⚠️ Brancura média é null/undefined, ponto não adicionado ao gráfico');
-//             }
-//         } else {
-//             console.log('⚠️ Nenhum registro encontrado nos dados');
-//         }
-//     });
-    
-//     return () => unsubscribe()
-// }, [whitekonService, filterHistoryByTime])
-
-
-
-
-//   // Limpeza periódica do histórico (a cada 5 minutos)
-//   useEffect(() => {
-//     const cleanupInterval = setInterval(() => {
-//       setChartHistory(prevHistory => 
-//         filterHistoryByTime(prevHistory, Date.now())
-//       );
-//     }, 5 * 60 * 1000); // 5 minutos
-
-//     return () => clearInterval(cleanupInterval);
-//   }, [filterHistoryByTime]);
-
-//   const value: WhitekonContextType = {
-//     isConnected,
-//     isConnecting,
-//     connectionParams,
-//     whitekonData,
-//     chartHistory,
-//     connect,
-//     disconnect,
-//     checkConnection,
-//     clearChartHistory,
-//     readRegister: useCallback((address: number) => whitekonService.readRegister(address), [whitekonService]),
-//     writeRegister: useCallback((address: number, value: number) => whitekonService.writeRegister(address, value), [whitekonService]),
-//     readAllRegisters: useCallback(() => whitekonService.readAllRegisters(), [whitekonService]),
-//   }
-
-//   return <WhitekonContext.Provider value={value}>{children}</WhitekonContext.Provider>
-// }
-
-
-
-
-
-
-
-// contexts/whitekon-context.tsx
-// a mais atualizada com a parte do gráfico arrumada 
-// mudei o whtekon-service e começo a dar erro nessa mas a parte que da certo ta marcada no código
-
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { WhitekonService } from "@/lib/whitekon-service"
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react"
+import { Mutex } from "async-mutex"
+import { WhiteKonStorage } from "@/lib/whitekon-storage"
+import * as WhitekonService from "@/lib/whitekon-service"
 import { useToast } from "@/hooks/use-toast"
+import type { WhiteKonData } from "@/lib/types"
+
+// --- Tipos de Prioridade de Polling ---
+export type PollingPriority = 
+  | { mode: 'global' }
+  | { mode: 'high-frequency'; deviceId: string; registers: number[]; interval: number }
+  | { mode: 'paused' };
 
 export interface ChartDataPoint {
   time: string;
@@ -259,25 +23,27 @@ export interface ChartDataPoint {
 }
 
 interface WhitekonContextType {
-  isConnected: boolean
-  isConnecting: boolean
-  connectionParams: {
-    port: string
-    baudRate: string
-    address: string
-  } | null
-  whitekonData: any,
-  chartHistory: ChartDataPoint[],
-  connect: (port: string, baudRate: string, address: string) => Promise<boolean>
-  disconnect: () => Promise<void>
-  checkConnection: () => Promise<boolean>
-  readRegister: (address: number) => Promise<number | null>
-  writeRegister: (address: number, value: number) => Promise<boolean>
-  readAllRegisters: () => Promise<{ [key: number]: number | null }>
-  clearChartHistory: () => void
+  isConnected: boolean;
+  isConnecting: boolean;
+  isPolling: boolean;
+  connectionParams: { port: string; baudRate: string } | null;
+  allDevicesData: Map<string, Partial<WhiteKonData & { error: boolean }>>;
+  chartHistory: Map<string, ChartDataPoint[]>;
+  connectionHealth: {
+    lastSuccess: Date | null;
+    consecutiveErrors: number;
+    isHealthy: boolean;
+  };
+  setPollingPriority: (priority: PollingPriority) => void;
+  connect: (port: string, baudRate: string) => Promise<boolean>;
+  disconnect: () => Promise<void>;
+  readDeviceRegister: (deviceId: string, register: number) => Promise<number | null>;
+  writeDeviceRegister: (deviceId: string, register: number, value: number) => Promise<boolean>;
+  readAllDeviceRegisters: (deviceId: string) => Promise<void>;
+  clearChartHistory: (deviceId: string) => void;
 }
 
-const WhitekonContext = createContext<WhitekonContextType | undefined>(undefined)
+const WhitekonContext = createContext<WhitekonContextType | undefined>(undefined);
 
 export function useWhitekon() {
   const context = useContext(WhitekonContext)
@@ -287,220 +53,348 @@ export function useWhitekon() {
   return context
 }
 
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const GLOBAL_POLLING_INTERVAL = 2000;
+const MAX_CONSECUTIVE_ERRORS = 5;
+const communicationMutex = new Mutex();
+
 export function WhitekonProvider({ children }: { children: React.ReactNode }) {
-  const [isConnected, setIsConnected] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [connectionParams, setConnectionParams] = useState<{
-    port: string
-    baudRate: string
-    address: string
-  } | null>(null)
-  const [whitekonData, setWhitekonData] = useState<any>(null)
-  const [chartHistory, setChartHistory] = useState<ChartDataPoint[]>([]);
-
-  const { toast } = useToast()
-  const whitekonService = WhitekonService.getInstance()
-  const ONE_HOUR_MS = 60 * 60 * 1000;
-
-  // [FIX] - Lógica para reconexão automática
-  useEffect(() => {
-    const savedConnection = localStorage.getItem("whitekon-connection");
-    if (savedConnection) {
-      console.log("Conexão anterior encontrada, tentando reconectar...");
-      const { port, baudRate, address } = JSON.parse(savedConnection);
-      // Usamos um timeout para garantir que a UI possa ser renderizada antes de iniciar a conexão
-      setTimeout(() => connect(port, baudRate, address), 100);
-    }
-  }, []); // Executa apenas uma vez na montagem do componente
-
-  const connect = useCallback(
-    async (port: string, baudRate: string, address: string): Promise<boolean> => {
-      if (isConnecting) return false
-      
-      setIsConnecting(true)
-      try {
-        const success = await whitekonService.connect(port, baudRate, address)
-        
-        if (success) {
-          setIsConnected(true)
-          setConnectionParams({ port, baudRate, address })
-          localStorage.setItem("whitekon-connection", JSON.stringify({ port, baudRate, address }))
-          
-          toast({
-            title: "Dispositivo Conectado",
-            description: `Conexão estabelecida em ${port} (RTU: ${address})`,
-          })
-          
-          // Configura estado padrão do dispositivo após conectar
-          await whitekonService.writeRegister(29, 0) // Modo Automático
-          await whitekonService.writeRegister(0, 0)  // Modo Normal
-          await whitekonService.writeRegister(28, 0)  // Desliga LED/Bobina
-          
-          return true
-        } else {
-            throw new Error("Falha ao abrir a porta de comunicação.")
-        }
-      } catch (error: any) {
-        setIsConnected(false)
-        setConnectionParams(null)
-        localStorage.removeItem("whitekon-connection"); // Limpa em caso de falha
-        await whitekonService.disconnect()
-        toast({
-          title: "Erro de conexão",
-          description: error.message || "Não foi possível comunicar com o dispositivo.",
-          variant: "destructive",
-        })
-        return false
-      } finally {
-        setIsConnecting(false)
-      }
-    },
-    [isConnecting, toast, whitekonService]
-  )
-
-  const disconnect = useCallback(async (): Promise<void> => {
-    await whitekonService.disconnect()
-    setIsConnected(false)
-    setConnectionParams(null)
-    setWhitekonData(null)
-    setChartHistory([])
-    localStorage.removeItem("whitekon-connection")
-    toast({ title: "Desconectado" })
-  }, [toast, whitekonService])
+  const { toast } = useToast();
+  const [connection, setConnection] = useState<{ port: string; baudRate: string } | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
   
-  const checkConnection = useCallback(async (): Promise<boolean> => {
-    return isConnected
-  }, [isConnected])
+  const [allDevicesData, setAllDevicesData] = useState<Map<string, Partial<WhiteKonData & { error: boolean }>>>(new Map());
+  const [chartHistory, setChartHistory] = useState<Map<string, ChartDataPoint[]>>(new Map());
+  const [connectionHealth, setConnectionHealth] = useState({
+      lastSuccess: null as Date | null,
+      consecutiveErrors: 0,
+      isHealthy: true
+  });
+  
+  const [pollingPriority, setPollingPriority] = useState<PollingPriority>({ mode: 'global' });
 
-  const clearChartHistory = useCallback(() => {
-    setChartHistory([])
-    toast({ title: "Histórico do gráfico limpo" })
-  }, [toast])
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const previousPriorityRef = useRef<PollingPriority>({ mode: 'global' });
 
-  const filterHistoryByTime = useCallback((history: ChartDataPoint[], currentTime: number) => {
-    const oneHourAgo = currentTime - ONE_HOUR_MS;
-    return history.filter(entry => entry.timestamp >= oneHourAgo);
-  }, [ONE_HOUR_MS]);
-
-//   useEffect(() => {
-//       const unsubscribe = whitekonService.onDataUpdate((data) => {
-//           setWhitekonData(data)
-          
-//           if (data?.registers) {
-//     const brancuraMedia = data.registers[5];
-//     const contadorAmostras = data.registers[19];
-//     const brancuraOnlineRaw = data.registers[21];
-
-//     if (brancuraMedia !== null && brancuraMedia !== undefined) {
-//         const now = new Date();
-//         const timestamp = now.getTime();
-        
-//         const newHistoryEntry: ChartDataPoint = {
-//             time: now.toLocaleTimeString('pt-BR', { 
-//                 hour: '2-digit', 
-//                 minute: '2-digit', 
-//                 second: '2-digit' 
-//             }),
-//             timestamp,
-//             brancuraMedia: brancuraMedia / 10,
-//             // --- LINHA MODIFICADA ---
-//             contadorAmostras: contadorAmostras && contadorAmostras > 0 ? contadorAmostras : null,
-//             // --- FIM DA LINHA MODIFICADA ---
-//             brancuraOnline: brancuraOnlineRaw != null ? brancuraOnlineRaw / 10 : null,
-//         };
-
-//         setChartHistory(prevHistory => {
-//             const filteredHistory = filterHistoryByTime(prevHistory, timestamp);
-//             const lastEntry = filteredHistory[filteredHistory.length - 1];
-//             if (lastEntry && (timestamp - lastEntry.timestamp) < 500) {
-//                 const newHistory = [...filteredHistory.slice(0, -1), newHistoryEntry];
-//                 return newHistory;
-//             }
-//             return [...filteredHistory, newHistoryEntry];
-//         });
-//     }
-// }
-//       });
-//       return () => unsubscribe()
-//   }, [whitekonService, filterHistoryByTime])
-
-
-  useEffect(() => {
-    const unsubscribe = whitekonService.onDataUpdate((data) => {
-        setWhitekonData(data)
-        
-        if (data?.registers) {
-          const brancuraMedia = data.registers[5];
-          const contadorAmostras = data.registers[19];
-          const brancuraOnlineRaw = data.registers[21];
-
-          // A validação de brancuraMedia continua a mesma, pois é o gatilho para adicionar um ponto.
-          if (brancuraMedia !== null && brancuraMedia !== undefined) {
-              const now = new Date();
-              const timestamp = now.getTime();
-              
-              const newHistoryEntry: ChartDataPoint = {
-                  time: now.toLocaleTimeString('pt-BR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit', 
-                      second: '2-digit' 
-                  }),
-                  timestamp,
-                  brancuraMedia: brancuraMedia / 10,
-                  // --- LINHA MODIFICADA ---
-                  // Verifica se o contador não é nulo/undefined. Se for um número (incluindo 0), soma 1.
-                  // Assim, a amostra 0 vira 1, a 1 vira 2, etc.
-                  contadorAmostras: contadorAmostras != null ? contadorAmostras + 1 : null,
-                  // --- FIM DA MODIFICAÇÃO ---
-                  brancuraOnline: brancuraOnlineRaw != null ? brancuraOnlineRaw / 10 : null,
-              };
-
-              setChartHistory(prevHistory => {
-                  const filteredHistory = filterHistoryByTime(prevHistory, timestamp);
-                  const lastEntry = filteredHistory[filteredHistory.length - 1];
-                  if (lastEntry && (timestamp - lastEntry.timestamp) < 500) {
-                      const newHistory = [...filteredHistory.slice(0, -1), newHistoryEntry];
-                      return newHistory;
-                  }
-                  return [...filteredHistory, newHistoryEntry];
-              });
-          }
+  const updateConnectionHealth = useCallback((success: boolean) => {
+      setConnectionHealth(prev => {
+        const newConsecutiveErrors = success ? 0 : prev.consecutiveErrors + 1;
+        const isHealthy = newConsecutiveErrors < MAX_CONSECUTIVE_ERRORS;
+        if (!isHealthy && prev.isHealthy) {
+            toast({ title: "Conexão Instável", variant: "destructive" });
         }
-    });
-    return () => unsubscribe()
-  }, [whitekonService, filterHistoryByTime])
+        return {
+            lastSuccess: success ? new Date() : prev.lastSuccess,
+            consecutiveErrors: newConsecutiveErrors,
+            isHealthy
+        };
+      });
+  }, [toast]);
+
+  const stopPolling = useCallback(() => {
+      if (pollingRef.current) {
+        clearTimeout(pollingRef.current);
+        pollingRef.current = null;
+      }
+      setIsPolling(false);
+  }, []);
 
   useEffect(() => {
-    const cleanupInterval = setInterval(() => {
-      setChartHistory(prevHistory => 
-        filterHistoryByTime(prevHistory, Date.now())
-      );
-    }, 5 * 60 * 1000);
+    stopPolling();
 
-    return () => clearInterval(cleanupInterval);
-  }, [filterHistoryByTime]);
+    if (!isConnected || !connection) {
+      return;
+    }
 
+    const { port, baudRate } = connection;
+    let isMounted = true;
+
+    const pollGlobal = async () => {
+        if (communicationMutex.isLocked() || !isMounted) return;
+
+        await communicationMutex.runExclusive(async () => {
+            const devices = WhiteKonStorage.getAll();
+            if (devices.length === 0) return;
+
+            let anySuccessInCycle = false;
+            const newDeviceDataUpdates = new Map<string, Partial<WhiteKonData & { error: boolean }>>();
+            const newChartHistoryUpdates = new Map<string, ChartDataPoint[]>();
+
+            for (const device of devices) {
+                if (pollingPriority.mode !== 'global' || !isMounted) break;
+
+                try {
+                    const registers = await WhitekonService.readAllRegisters(
+                        { port, baudrate: Number(baudRate), unit: device.rtuAddress },
+                        { timeout: 1800 } 
+                    );
+
+                    anySuccessInCycle = true;
+                    newDeviceDataUpdates.set(device.id, { registers, error: false });
+
+                    const { 5: brancuraMedia, 19: contadorAmostras, 21: brancuraOnlineRaw } = registers;
+                    if (brancuraMedia != null) {
+                        const now = new Date();
+                        const newEntry: ChartDataPoint = {
+                            time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                            timestamp: now.getTime(),
+                            brancuraMedia: brancuraMedia / 10,
+                            contadorAmostras: contadorAmostras != null ? contadorAmostras + 1 : null,
+                            brancuraOnline: brancuraOnlineRaw != null ? brancuraOnlineRaw / 10 : null,
+                        };
+                        newChartHistoryUpdates.set(device.id, [newEntry]);
+                    }
+                } catch (error: any) {
+                    console.error(`Falha no polling do dispositivo ${device.name} (${device.id}):`, error.message);
+                    newDeviceDataUpdates.set(device.id, { error: true });
+                }
+            }
+
+            if (!isMounted || pollingPriority.mode !== 'global') return;
+
+            setAllDevicesData(prevData => {
+                const newMap = new Map(prevData);
+                newDeviceDataUpdates.forEach((value, key) => {
+                    const existing = newMap.get(key) || {};
+                    newMap.set(key, { ...existing, ...value });
+                });
+                return newMap;
+            });
+
+            setChartHistory(prevHistory => {
+                const newMap = new Map(prevHistory);
+                newChartHistoryUpdates.forEach((value, key) => {
+                    const currentHistory = newMap.get(key) || [];
+                    const oneHourAgo = Date.now() - ONE_HOUR_MS;
+                    const filteredHistory = currentHistory.filter(p => p.timestamp >= oneHourAgo);
+                    newMap.set(key, [...filteredHistory, ...value]);
+                });
+                return newMap;
+            });
+
+            updateConnectionHealth(anySuccessInCycle);
+        });
+    };
+
+    const pollHighFrequency = async (deviceId: string, registersToRead: number[]) => {
+        if (communicationMutex.isLocked() || !isMounted) return;
+    
+        await communicationMutex.runExclusive(async () => {
+            const device = WhiteKonStorage.getById(deviceId);
+            if (!device) return;
+    
+            // Objeto temporário para guardar os valores lidos neste ciclo
+            const newRegisterValues: { [key: number]: number | null } = {};
+    
+            // Loop sequencial para ler um registrador de cada vez
+            for (const reg of registersToRead) {
+                // Se o modo de prioridade mudou no meio do loop, interrompe.
+                if (pollingPriority.mode !== 'high-frequency') break;
+                
+                try {
+                    const value = await WhitekonService.readRegister(
+                        { port, baudrate: Number(baudRate), unit: device.rtuAddress },
+                        reg,
+                        { timeout: 350 } // Timeout um pouco menor que o intervalo do loop
+                    );
+                    newRegisterValues[reg] = value;
+                } catch (error) {
+                    console.error(`Falha no polling de alta frequência para o registrador ${reg}:`, error);
+                    newRegisterValues[reg] = null; // Marca como nulo em caso de falha
+                }
+            }
+    
+            // Atualiza o estado principal UMA VEZ com todos os valores coletados
+            setAllDevicesData(prevData => {
+                const newMap = new Map(prevData);
+                const currentDeviceData = newMap.get(deviceId) || { registers: {}, error: false };
+                // Mescla os registros antigos com os novos valores lidos para não apagar os outros
+                const newRegisters = { ...(currentDeviceData.registers || {}), ...newRegisterValues };
+                newMap.set(deviceId, { ...currentDeviceData, registers: newRegisters, error: false });
+                return newMap;
+            });
+        });
+    };
+    
+    let loop: () => void;
+    let interval: number;
+
+    switch (pollingPriority.mode) {
+        case 'global':
+            loop = pollGlobal;
+            interval = GLOBAL_POLLING_INTERVAL;
+            break;
+        case 'high-frequency':
+            loop = () => pollHighFrequency(pollingPriority.deviceId, pollingPriority.registers);
+            interval = pollingPriority.interval;
+            break;
+        case 'paused':
+        default:
+            return;
+    }
+    
+    setIsPolling(true);
+    const runLoop = async () => {
+        if (!isMounted || pollingPriority.mode === 'paused') {
+            setIsPolling(false);
+            return;
+        };
+        await loop();
+        if (isMounted) {
+            pollingRef.current = setTimeout(runLoop, interval);
+        }
+    }
+    runLoop();
+
+    return () => { isMounted = false; stopPolling(); };
+  }, [isConnected, connection, pollingPriority, stopPolling, updateConnectionHealth]);
+
+  const runPrioritizedAction = useCallback(async <T,>(action: () => Promise<T>): Promise<T> => {
+    previousPriorityRef.current = pollingPriority;
+    setPollingPriority({ mode: 'paused' });
+
+    try {
+      return await communicationMutex.runExclusive(action);
+    } finally {
+      setPollingPriority(previousPriorityRef.current);
+    }
+  }, [pollingPriority]);
+
+  const connect = useCallback(async (port: string, baudRate: string): Promise<boolean> => {
+    if (isConnecting || isConnected) return false;
+    setIsConnecting(true);
+    try {
+        const devices = WhiteKonStorage.getAll();
+        if (devices.length === 0) {
+            toast({ title: "Nenhum dispositivo cadastrado", variant: "destructive" });
+            return false;
+        }
+        await WhitekonService.testConnection({ port, baudrate: Number(baudRate), unit: devices[0].rtuAddress }, { timeout: 8000 });
+        setConnection({ port, baudRate });
+        setIsConnected(true);
+        updateConnectionHealth(true);
+        toast({ title: "Conectado!", description: `Conexão estabelecida na porta ${port}` });
+        localStorage.setItem("whitekon-connection", JSON.stringify({ port, baudRate }));
+        setPollingPriority({ mode: 'global' });
+        return true;
+    } catch (error: any) {
+        setIsConnected(false);
+        setConnection(null);
+        toast({ title: "Erro de conexão", description: error.message, variant: "destructive" });
+        return false;
+    } finally {
+        setIsConnecting(false);
+    }
+  }, [isConnecting, isConnected, updateConnectionHealth, toast]);
+
+  const disconnect = useCallback(async () => {
+    stopPolling();
+    setIsConnected(false);
+    setConnection(null);
+    setAllDevicesData(new Map());
+    setChartHistory(new Map());
+    setConnectionHealth({ lastSuccess: null, consecutiveErrors: 0, isHealthy: true });
+    localStorage.removeItem("whitekon-connection");
+    toast({ title: "Desconectado" });
+  }, [stopPolling, toast]);
+  
+  useEffect(() => {
+    const saved = localStorage.getItem("whitekon-connection");
+    if (saved && !isConnected && !isConnecting) {
+        try {
+            const { port, baudRate } = JSON.parse(saved);
+            setTimeout(() => connect(port, baudRate), 1000);
+        } catch (error) {
+            console.error("Erro ao fazer reconexão automática:", error);
+            localStorage.removeItem("whitekon-connection");
+        }
+    }
+  }, [connect, isConnected, isConnecting]);
+
+  const readDeviceRegister = useCallback(async (deviceId: string, register: number) => {
+    if (!connection) throw new Error("Não conectado");
+    const device = WhiteKonStorage.getById(deviceId);
+    if (!device) throw new Error("Dispositivo não encontrado");
+
+    return runPrioritizedAction(() => 
+        WhitekonService.readRegister(
+            { ...connection, baudrate: Number(connection.baudRate), unit: device.rtuAddress },
+            register,
+            { timeout: 4000 }
+        )
+    );
+  }, [connection, runPrioritizedAction]);
+
+  const writeDeviceRegister = useCallback(async (deviceId: string, register: number, value: number) => {
+    if (!connection) throw new Error("Não conectado");
+    const device = WhiteKonStorage.getById(deviceId);
+    if (!device) throw new Error("Dispositivo não encontrado");
+
+    return runPrioritizedAction(async () => {
+        const success = await WhitekonService.writeRegister(
+            { ...connection, baudrate: Number(connection.baudRate), unit: device.rtuAddress },
+            register,
+            value,
+            { timeout: 5000 }
+        );
+        if (success) {
+            setAllDevicesData(prev => {
+                const newMap = new Map(prev);
+                const currentData = newMap.get(deviceId) || { registers: {} };
+                const updatedRegisters = { ...(currentData.registers || {}), [register]: value };
+                newMap.set(deviceId, { ...currentData, registers: updatedRegisters, error: false });
+                return newMap;
+            });
+        }
+        return success;
+    });
+  }, [connection, runPrioritizedAction]);
+
+  const readAllDeviceRegisters = useCallback(async (deviceId: string) => {
+    if (!connection) throw new Error("Não conectado");
+    const device = WhiteKonStorage.getById(deviceId);
+    if (!device) throw new Error("Dispositivo não encontrado");
+    
+    await runPrioritizedAction(async () => {
+        const data = await WhitekonService.readAllRegisters(
+            { ...connection, baudrate: Number(connection.baudRate), unit: device.rtuAddress },
+            { timeout: 6000 }
+        );
+        setAllDevicesData(prevMap => {
+            const newMap = new Map(prevMap);
+            newMap.set(deviceId, { registers: data, error: false });
+            return newMap;
+        });
+    });
+  }, [connection, runPrioritizedAction]);
+
+  const clearChartHistory = useCallback((deviceId: string) => {
+    setChartHistory(prev => {
+        const newMap = new Map(prev);
+        newMap.set(deviceId, []);
+        return newMap;
+    });
+    toast({ title: "Histórico do Gráfico Limpo" });
+  }, [toast]);
+  
   const value: WhitekonContextType = {
-    isConnected,
-    isConnecting,
-    connectionParams,
-    whitekonData,
-    chartHistory,
-    connect,
-    disconnect,
-    checkConnection,
-    clearChartHistory,
-    readRegister: useCallback((address: number) => whitekonService.readRegister(address), [whitekonService]),
-    writeRegister: useCallback((address: number, value: number) => whitekonService.writeRegister(address, value), [whitekonService]),
-    readAllRegisters: useCallback(() => whitekonService.readAllRegisters(), [whitekonService]),
-  }
+      isConnected, 
+      isConnecting, 
+      isPolling, 
+      connectionParams: connection, 
+      allDevicesData, 
+      chartHistory,
+      connectionHealth,
+      setPollingPriority,
+      connect, 
+      disconnect, 
+      readDeviceRegister, 
+      writeDeviceRegister, 
+      readAllDeviceRegisters,
+      clearChartHistory, 
+  };
 
-  return <WhitekonContext.Provider value={value}>{children}</WhitekonContext.Provider>
+  return <WhitekonContext.Provider value={value}>{children}</WhitekonContext.Provider>;
 }
-
-
-
-
-
-
-

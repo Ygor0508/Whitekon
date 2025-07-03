@@ -1,3 +1,4 @@
+// lib/types.ts
 export interface WhiteKon {
   id: string
   name: string
@@ -12,7 +13,9 @@ export interface WhiteKon {
 }
 
 export interface WhiteKonData {
-  // registers: { [key: number]: number | null }
+  // qualquer coisa só tirar registers e error
+  registers: { [key: number]: number | null }
+  error?: boolean
   // Dados de leitura
   brancuraMedia: number | null
   brancuraOnline: number | null

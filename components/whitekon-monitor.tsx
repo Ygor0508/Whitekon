@@ -1,15 +1,17 @@
+// components/whitekon-monitor.tsx
+
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { useWhitekon } from "@/contexts/whitekon-context"
 
+// CORREÇÃO: A interface agora recebe os registros e o status da conexão diretamente.
 interface WhitekonMonitorProps {
-  whitekonId: number
+  registers: { [key: number]: number | null } | undefined;
+  isConnected: boolean;
 }
 
-// Função auxiliar para formatar os valores, retornando 'N/A' se o valor for nulo ou indefinido.
 const formatValue = (value: number | null | undefined, unit = '') => {
   if (value === null || value === undefined) {
     return "N/A";
@@ -17,10 +19,18 @@ const formatValue = (value: number | null | undefined, unit = '') => {
   return `${value}${unit}`;
 };
 
-export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
-  const { whitekonData: contextData, isConnected } = useWhitekon();
+const getModoOperacaoTexto = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return "N/A";
+  switch (value) {
+    case 0: return "OPERAÇÃO NORMAL";
+    case 1: return "CALIBRAÇÃO";
+    case 2: return "LIMPEZA";
+    case 3: return "MÁQUINA PARADA";
+    default: return `DESCONHECIDO (${value})`;
+  }
+};
 
-  // Se não há conexão, exibe a mensagem apropriada.
+export function WhitekonMonitor({ registers, isConnected }: WhitekonMonitorProps) {
   if (!isConnected) {
     return (
       <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg border border-gray-200">
@@ -30,8 +40,7 @@ export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
     );
   }
 
-  // Se não há dados ainda, exibe a mensagem de aguardo.
-  if (!contextData?.registers) {
+  if (!registers) {
     return (
       <div className="flex flex-col items-center justify-center h-64 bg-gray-50 rounded-lg border border-gray-200">
         <p className="text-gray-500 mb-2">Aguardando dados...</p>
@@ -40,18 +49,18 @@ export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
     );
   }
 
-  // Extrai os dados dos registradores para fácil acesso.
-  const registers = contextData.registers;
-  const tempCalibracao = registers[6] !== null ? registers[6] / 10 : null;
-  const tempOnline = registers[7] !== null ? registers[7] / 10 : null;
-  const brancuraMedia = registers[5] !== null ? registers[5] / 10 : null;
-  const brancuraOnline = registers[21] !== null ? registers[21] / 10 : null;
-  const desvioPadrao = registers[11] !== null ? registers[11] / 100 : null;
-  const qtdAmostras = registers[19] != null ? registers[19] + 1 : null;
-  const gain = registers[34] !== null ? registers[34] & 0xff : null;
-  const tempoIntegracao = registers[34] !== null ? (registers[34] >> 8) & 0xff : null;
-  const ledStatus = registers[28] !== null ? (registers[28] & 1) === 1 : null;
-  const modoOperacao = registers[29] !== null ? (registers[29] === 0 ? "AUTOMÁTICO" : "MANUAL") : null;
+  const modoOperacao = getModoOperacaoTexto(registers[0]);
+  const tempCalibracao = registers[6] !== null ? registers[6]! / 10 : null;
+  const tempOnline = registers[7] !== null ? registers[7]! / 10 : null;
+  const brancuraMedia = registers[5] !== null ? registers[5]! / 10 : null;
+  const brancuraOnline = registers[21] !== null ? registers[21]! / 10 : null;
+  const desvioPadrao = registers[11] !== null ? registers[11]! / 100 : null;
+  const qtdAmostras = registers[19] != null ? registers[19]! + 1 : null;
+  const gain = registers[34] !== null ? registers[34]! & 0xff : null;
+  const tempoIntegracao = registers[34] !== null ? (registers[34]! >> 8) & 0xff : null;
+  const ledStatus = registers[28] !== null ? (registers[28]! & 1) === 1 : null;
+  const controleManual = registers[29] !== null ? (registers[29]! === 0 ? "AUTOMÁTICO" : "MANUAL") : null;
+  
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -141,18 +150,22 @@ export function WhitekonMonitor({ whitekonId }: WhitekonMonitorProps) {
                 </div>
                 <div className="flex justify-between">
                   <Label>Modo Operação:</Label>
-                  <Badge variant="outline">{modoOperacao !== null ? modoOperacao : "N/A"}</Badge>
+                  <Badge variant="outline">{modoOperacao}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <Label>Controle Led/Bob:</Label>
+                  <Badge variant="outline">{controleManual}</Badge>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label>Br. Mínima:</Label>
-                  <span className="font-mono">{formatValue(registers[53] !== null ? registers[53] / 10 : null, "%")}</span>
+                  <span className="font-mono">{formatValue(registers[53] != null ? registers[53]! / 10 : null, "%")}</span>
                 </div>
                 <div className="flex justify-between">
                   <Label>Br. Máxima:</Label>
-                  <span className="font-mono">{formatValue(registers[54] !== null ? registers[54] / 10 : null, "%")}</span>
+                  <span className="font-mono">{formatValue(registers[54] != null ? registers[54]! / 10 : null, "%")}</span>
                 </div>
                 <div className="flex justify-between">
                   <Label>Claro Máximo:</Label>

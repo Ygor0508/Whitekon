@@ -1,3 +1,5 @@
+// lib/whitekon-storage.ts
+
 import type { WhiteKon } from "./types"
 
 const STORAGE_KEY = "whitekon-devices"
